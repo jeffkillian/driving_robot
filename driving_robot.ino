@@ -1,24 +1,57 @@
-const int motorPin = 9;
+#include <IRremote.h>
+
+/*
+   - Pins 5 and 6: controlled by Timer 0 used for delay, millis, and micros
+  - Pins 9 and 10: controlled by timer 1    servo library
+  - Pins 11 and 3: controlled by timer 2    tone
+*/
+const int motorPin = 8;
+const int IRInputPin = 2;
+const String forward = "fda05f";
+const String repeat = "ffffff";
+
+unsigned long lastButtonTime = millis();
+const int timeoutDelay = 2000;  // milliseconds - I'm guessing here, this needs to be longer than the IR repeat interval
+
+IRrecv irrecv(IRInputPin);
+decode_results results;
+
 
 void setup() {
- pinMode(9, OUTPUT)
-  Serial.begin(9600);     
+  pinMode(motorPin, OUTPUT);
+  Serial.begin(9600);
+  irrecv.enableIRIn();
 }
 
 void loop() {
- { // This example basically replicates a blink, but with the motorPin instead.
-  int onTime = 3000;  // milliseconds to turn the motor on
-  int offTime = 3000; // milliseconds to turn the motor off
 
-  analogWrite(motorPin, 255); // turn the motor on (full speed)
-  delay(onTime);                // delay for onTime milliseconds
-  analogWrite(motorPin, 0);  // turn the motor off
-  delay(offTime);               // delay for offTime milliseconds
+  if (irrecv.decode(&results)) {
+    irrecv.resume();// Continue to look for more inputs
+    String buttonPressed = String(results.value, HEX);
+    Serial.println(buttonPressed);
 
-  // Uncomment the functions below by taking out the //. Look below for the
-  // code examples or documentation.
-  
-  // speedUpandDown(); 
-  // serialSpeed();
+    if (buttonPressed == forward) {
+      moveForward();
+    }
+
+    if (buttonPressed) {
+      moveForward();
+    }
+
+  }
+
+  if (millis() - lastButtonTime > timeoutDelay) {
+    digitalWrite(motorPin, LOW);  // turn the motor off
+  }
+
+
+
+
+
 }
+
+void moveForward() {
+  lastButtonTime = millis();
+  digitalWrite(motorPin, HIGH); // turn the motor on (full speed)
 }
+
