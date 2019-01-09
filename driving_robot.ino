@@ -1,57 +1,69 @@
-#include <IRremote.h>
+#include <IRremote.h>      //including the remote library
 
-/*
-   - Pins 5 and 6: controlled by Timer 0 used for delay, millis, and micros
-  - Pins 9 and 10: controlled by timer 1    servo library
-  - Pins 11 and 3: controlled by timer 2    tone
-*/
-const int motorPin = 8;
-const int IRInputPin = 2;
-const String forward = "fda05f";
-const String repeat = "ffffff";
+#define Next_button 41055   // code received from next button
+#define Prev_button 45135  // code received from previous button
+#define left_button 4335  // code received from left button
+#define right_button 20655 // code received from right button
+#define Stop_button 36975   // code received from stop button
 
-unsigned long lastButtonTime = millis();
-const int timeoutDelay = 2000;  // milliseconds - I'm guessing here, this needs to be longer than the IR repeat interval
+int receiver_pin = 2;      //output pin of IR receiver to pin 2 of arduino
+//initializing the pins for leds
+int left_motor1 = 11;      //pin 6 of arduino to pin 7 of l293d
+int left_motor2 = 12;      //pin 7 of arduino to pin 2 of l293d
+int right_motor1  =6;      //pin 5 of arduino to pin 10 of l293d
+int right_motor2 = 5;      //pin 4 of arduino to pin 15 of l293d
 
-IRrecv irrecv(IRInputPin);
-decode_results results;
-
+IRrecv receiver(receiver_pin); //Arduino will take output of IR receiver from pin 2
+decode_results output;
 
 void setup() {
-  pinMode(motorPin, OUTPUT);
   Serial.begin(9600);
-  irrecv.enableIRIn();
+  receiver.enableIRIn(); // Start to take the output from IR receiver
+  //initializing all the pins where we have connected the led's as output pins
+  pinMode(left_motor1, OUTPUT);
+  pinMode(left_motor2, OUTPUT);
+  pinMode(right_motor1, OUTPUT);
+  pinMode(right_motor2, OUTPUT);
 }
 
 void loop() {
-
-  if (irrecv.decode(&results)) {
-    irrecv.resume();// Continue to look for more inputs
-    String buttonPressed = String(results.value, HEX);
-    Serial.println(buttonPressed);
-
-    if (buttonPressed == forward) {
-      moveForward();
+  if (receiver.decode(&output)) {
+    unsigned int value = output.value;
+    Serial.println(value);
+    switch(value) {
+      case Next_button:
+           digitalWrite(left_motor1,LOW);
+           digitalWrite(left_motor2,HIGH);
+           digitalWrite(right_motor1,HIGH);
+           digitalWrite(right_motor2,LOW);
+           break;
+      case Prev_button:
+           digitalWrite(left_motor1,HIGH);
+           digitalWrite(left_motor2,LOW);
+           digitalWrite(right_motor1,LOW);
+           digitalWrite(right_motor2,HIGH);
+           break;
+      case left_button: 
+           digitalWrite(left_motor1,LOW);
+           digitalWrite(left_motor2,HIGH);
+           digitalWrite(right_motor1,HIGH);
+           digitalWrite(right_motor2,HIGH);
+           break;
+      case right_button:
+           digitalWrite(left_motor1,HIGH);
+           digitalWrite(left_motor2,HIGH);
+           digitalWrite(right_motor1,HIGH);
+           digitalWrite(right_motor2,LOW);
+           break;
+      case Stop_button:
+           digitalWrite(left_motor1,LOW);
+           digitalWrite(left_motor2,LOW);
+           digitalWrite(right_motor1,LOW);
+           digitalWrite(right_motor2,LOW);
+           break;
     }
-
-    if (buttonPressed) {
-      moveForward();
-    }
-
+    receiver.resume();
+     delay(200);
+   
   }
-
-  if (millis() - lastButtonTime > timeoutDelay) {
-    digitalWrite(motorPin, LOW);  // turn the motor off
-  }
-
-
-
-
-
 }
-
-void moveForward() {
-  lastButtonTime = millis();
-  digitalWrite(motorPin, HIGH); // turn the motor on (full speed)
-}
-
